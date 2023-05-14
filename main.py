@@ -1,19 +1,44 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
+import logging
+import os
 
-BOT_TOKEN = "6297007825:AAGaKHiJvLkZUxxeMoVgWFewbXHjwv7E1Bg"
+from dotenv import load_dotenv
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Вітаю це мій перший телеграм бот написанний мовою python!")
+from openai_helper import OpenAIHelper
+from telegram_bot import ChatGPT3TelegramBot
 
-def run():
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    application.add_handler(CommandHandler("start", start))
+def main():
+    load_dotenv()
 
-    application.add_handler(CommandHandler("help", start))
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
 
-    application.run_polling()
+    openai_config = {
+        'api_key': os.environ['OPENAI_API_KEY'],
+        'show_usage': False,
+        'max_history_size': 10,
+        'max_conversation_age_minutes': 180,
+        'assistant_prompt': 'You are a helpful assistant.',
+        'max_tokens': 1200,
+        'model': 'gpt-3.5-turbo',
+        'temperature': 1,
+        'n_choices': 1,
+        'presence_penalty': 0,
+        'frequency_penalty': 0,
+    }
 
-if __name__ == "__main__":
-    run()
+    telegram_config = {
+        'token': os.environ['TELEGRAM_BOT_TOKEN'],
+        'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
+    }
+
+    # Setup and run ChatGPT and Telegram bot
+    openai_helper = OpenAIHelper(config=openai_config)
+    telegram_bot = ChatGPT3TelegramBot(config=telegram_config, openai=openai_helper)
+    telegram_bot.run()
+
+
+if __name__ == '__main__':
+    main()
